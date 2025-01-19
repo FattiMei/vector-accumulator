@@ -36,3 +36,42 @@ The reference articles implements SIMD with hand written x86 intrinsics and the 
   * metaprogramming assisted loop unrolling
 
 A comparison of the program runtimes and generated code will be included in the repository.
+
+
+## Metaprogramming assisted loop unrolling
+If the iterations of a loop don't depend from each other, there is a chance the compiler may unroll the loop. This chance is increased by providing proper optimization flags to the compiler (i.e `-O3 -ffast-math` etc..) and by having for loops with compile time known bounds.
+
+```(c)
+for (int i = 0; i < 4; ++i) {
+    z[i] = x[i] + y[i];
+}
+
+// may be unrolled into
+z[0] = x[0] + y[0];
+z[1] = x[1] + y[1];
+z[2] = x[2] + y[2];
+z[3] = x[3] + y[3];
+```
+
+C++ metaprogramming allows the programmer to select a compile time the desired unroll factor and produce multiple implementations to compare.
+
+```(c++)
+template <typename T, size_t UNROLL_FACTOR>
+T dot_simd(const std::vector<T>& x, const std::vector<T>& y) {
+    assert(x.size() % UNROLL_FACTOR == 0);
+
+	std::array<T, UNROLL_FACTOR> acc{0};
+
+	for (size_t i = 0; i < x.size(); i += UNROLL_FACTOR) {
+		for (auto j = 0; j < UNROLL_FACTOR; ++j) {
+			acc[j] += x[i+j] * y[i+j];
+		}
+	}
+
+	return std::accumulate(
+		acc.begin(),
+		acc.end(),
+		0.0
+	);
+}
+```
