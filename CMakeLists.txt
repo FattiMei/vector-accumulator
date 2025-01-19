@@ -46,6 +46,7 @@ endif()
 # experiment enumeration
 set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 set(DOT_PRODUCT_DIR "${SRC_DIR}/dot")
+set(MIN_PRODUCT_DIR "${SRC_DIR}/minimum")
 
 
 add_executable(
@@ -56,4 +57,15 @@ add_executable(
 if (UNIX)
 	set(arch_flag "-m${ISPC_ARCH_BIT}")
 	target_compile_options(dot_product_test PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
+endif()
+
+
+add_executable(
+	minimum_test
+	${MIN_PRODUCT_DIR}/test.cpp
+	${MIN_PRODUCT_DIR}/minimum.ispc
+)
+if (UNIX)
+	set(arch_flag "-m${ISPC_ARCH_BIT}")
+	target_compile_options(minimum_test PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
 endif()
