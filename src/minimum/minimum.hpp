@@ -6,6 +6,7 @@
 #include <limits>
 #include <vector>
 #include <numeric>
+#include <algorithm>
 
 
 template <typename T>
@@ -22,7 +23,26 @@ T minimum_naive(const std::vector<T>& x) {
 
 template <typename T, size_t UNROLL_FACTOR>
 T minimum_templated_unrolling(const std::vector<T>& x) {
-	return 0;
+	std::array<T, UNROLL_FACTOR> acc{std::numeric_limits<T>::max()};
+	size_t i;
+
+	for (i = 0; i + UNROLL_FACTOR <= x.size(); i += UNROLL_FACTOR) {
+		for (auto j = 0; j < UNROLL_FACTOR; ++j) {
+			acc[j] = std::min(acc[j], x[i+j]);
+		}
+	}
+
+	// loop peeling
+	if (i < x.size()) {
+		for (auto j = 0; j < UNROLL_FACTOR; ++j) {
+			acc[j] = std::min(acc[j], x[i+j]);
+		}
+	}
+
+	return *std::min_element(
+		acc.begin(),
+		acc.end()
+	);
 }
 
 
@@ -32,7 +52,19 @@ T minimum_templated_unrolling(const std::vector<T>& x) {
 
 template <typename T>
 T minimum_experimental_simd(const std::vector<T>& x) {
-	return 0;
+	using simd_t = std::experimental::native_simd<T>;
+	using mask_t = std::experimental::native_simd_mask<T>;
+
+	simd_t acc = std::numeric_limits<T>::max();
+	simd_t vx;
+
+	for (size_t i = 0; i + acc.size() <= x.size(); i += acc.size()) {
+		vx.copy_from(x.data() + i, std::experimental::element_aligned);
+
+		acc = std::experimental::min(acc, vx);
+	}
+
+	return std::experimental::hmin(acc);
 }
 
 #endif
