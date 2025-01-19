@@ -74,4 +74,30 @@ T dot_experimental_simd(const std::vector<T>& x, const std::vector<T>& y) {
 #endif
 
 
+#ifdef ISPC_SUPPORT
+// this is a hack, originated from my CMake skill issue:
+// 	the ISPC compiler produces automatically the header file to be included in the main C++ application,
+//
+// 	the header name is generated from the ispc source name
+// 	  foo.ispc -> foo_ispc.h
+//
+//	when in doubt grep for
+#include "dot_ispc.h"
+#include <type_traits>
+
+
+template <typename T>
+T dot_ispc(const std::vector<T>& x, const std::vector<T>& y) {
+	if constexpr (std::is_same_v<T, float>) {
+		return ispc::dotf(x.data(), y.data(), x.size());
+	}
+	else if constexpr (std::is_same_v<T, double>) {
+		return ispc::dotd(x.data(), y.data(), x.size());
+	}
+}
+
+
+#endif
+
+
 #endif

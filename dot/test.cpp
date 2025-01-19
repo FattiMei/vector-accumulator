@@ -1,4 +1,3 @@
-#include "dot.hpp"
 #include <cmath>
 #include <array>
 #include <string>
@@ -7,6 +6,7 @@
 #include <cassert>
 #include <iostream>
 #include <functional>
+#include "dot.hpp"
 
 
 template <typename T>
@@ -38,6 +38,10 @@ int main() {
 
 #ifdef EXPERIMENTAL_SIMD_SUPPORT
 		, std::make_pair("native_simd     ", dot_experimental_simd<floating>)
+#endif
+
+#ifdef ISPC_SUPPORT
+		, std::make_pair("ispc            ", dot_ispc<floating>)
 #endif
 	};
 
