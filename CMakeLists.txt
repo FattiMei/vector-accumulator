@@ -44,7 +44,8 @@ endif()
 
 
 # experiment enumeration
-set(DOT_PRODUCT_DIR "${CMAKE_SOURCE_DIR}/dot")
+set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
+set(DOT_PRODUCT_DIR "${SRC_DIR}/dot")
 
 
 add_executable(
