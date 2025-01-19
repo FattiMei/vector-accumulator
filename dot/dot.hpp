@@ -24,7 +24,7 @@ T dot_templated_unrolling(const std::vector<T>& x, const std::vector<T>& y) {
 	std::array<T, UNROLL_FACTOR> acc{0};
 	size_t i;
 
-	for (i = 0; i + UNROLL_FACTOR < x.size(); i += UNROLL_FACTOR) {
+	for (i = 0; i + UNROLL_FACTOR <= x.size(); i += UNROLL_FACTOR) {
 		for (auto j = 0; j < UNROLL_FACTOR; ++j) {
 			acc[j] += x[i+j] * y[i+j];
 		}
@@ -55,14 +55,20 @@ T dot_experimental_simd(const std::vector<T>& x, const std::vector<T>& y) {
 	simd_t acc = 0, vx, vy;
 	size_t i;
 
-	for (i = 0; i + acc.size() < x.size(); i += acc.size()) {
+	for (i = 0; i + acc.size() <= x.size(); i += acc.size()) {
 		vx.copy_from(x.data() + i, std::experimental::element_aligned);
 		vy.copy_from(y.data() + i, std::experimental::element_aligned);
 
 		acc += vx * vy;
 	}
 
-	return std::experimental::reduce(acc);
+	// loop peeling
+	T remainder = 0;
+	for (; i < x.size(); ++i) {
+		remainder += x[i] * y[i];
+	}
+
+	return std::experimental::reduce(acc) + remainder;
 }
 
 #endif
