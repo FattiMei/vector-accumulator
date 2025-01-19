@@ -52,15 +52,14 @@ T dot_templated_unrolling(const std::vector<T>& x, const std::vector<T>& y) {
 template <typename T>
 T dot_experimental_simd(const std::vector<T>& x, const std::vector<T>& y) {
 	using simd_t = std::experimental::native_simd<T>;
-	simd_t acc = 0;
-	simd_t x, y;
+	simd_t acc = 0, vx, vy;
 	size_t i;
 
 	for (i = 0; i + acc.size() < x.size(); i += acc.size()) {
-		x.copy_from(x.data() + i, std::experimental::vector_aligned);
-		y.copy_from(y.data() + i, std::experimental::vector_aligned);
+		vx.copy_from(x.data() + i, std::experimental::element_aligned);
+		vy.copy_from(y.data() + i, std::experimental::element_aligned);
 
-		acc += x * y;
+		acc += vx * vy;
 	}
 
 	return std::experimental::reduce(acc);
