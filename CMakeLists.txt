@@ -8,6 +8,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_CXX_STANDARD 23)
+set(AGGRESSIVE_OPTIMIZATIONS "-march=native" "-ftree-vectorize")
 
 find_package(benchmark REQUIRED)
 find_package(Python3 REQUIRED)
@@ -30,9 +31,6 @@ if (COMPILE_SIMD)
 endif()
 
 
-# support for intel ispc
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ispc.cmake)
-
 if (NOT DEFINED ISPC_EXECUTABLE)
 	find_program(ISPC_EXECUTABLE ispc)
 
@@ -40,8 +38,13 @@ if (NOT DEFINED ISPC_EXECUTABLE)
 		message(STATUS "Failed to find ispc compiler, will build anyways")
 	else ()
 		message(STATUS "Found ispc executable at ${ISPC_EXECUTABLE}")
-		add_compile_definitions(ISPC_SUPPORT)
 	endif()
+endif()
+
+
+if (DEFINED ISPC_EXECUTABLE)
+	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ispc.cmake)
+	add_compile_definitions(ISPC_SUPPORT)
 endif()
 
 
@@ -60,7 +63,7 @@ foreach (EXPERIMENT_DIR ${EXPERIMENTS})
 	set(JSON_REPORT_NAME "${EXPERIMENT_NAME}_report.json")
 
 	# TODO: the one thing I don't particularly like is the repetition of the compilation commands for the test and the benchmark executables
-	# dovrebbero diventare funzioni
+	# should become functions
 	add_executable(
 		${TEST_NAME}
 		${EXPERIMENT_DIR}/test.cpp
@@ -68,7 +71,7 @@ foreach (EXPERIMENT_DIR ${EXPERIMENTS})
 	)
 	set(arch_flag "-m${ISPC_ARCH_BIT}")
 	target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
-	target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:-march=native>)
+	target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${AGGRESSIVE_OPTIMIZATIONS}>)
 
 	add_executable(
 		${BENCH_NAME}
@@ -76,8 +79,8 @@ foreach (EXPERIMENT_DIR ${EXPERIMENTS})
 		${EXPERIMENT_DIR}/${EXPERIMENT_NAME}.ispc
 	)
 	set(arch_flag "-m${ISPC_ARCH_BIT}")
-	target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
-	target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:-march=native>)
+	target_compile_options(${BENCH_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
+	target_compile_options(${BENCH_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${AGGRESSIVE_OPTIMIZATIONS}>)
 	target_link_libraries(${BENCH_NAME} PRIVATE benchmark::benchmark)
 
 	add_custom_command(
