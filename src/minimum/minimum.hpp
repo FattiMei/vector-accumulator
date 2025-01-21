@@ -2,15 +2,15 @@
 #define __MINIMUM_HPP__
 
 
+#include <span>
 #include <array>
 #include <limits>
-#include <vector>
 #include <numeric>
 #include <algorithm>
 
 
 template <typename T>
-T minimum_naive(const std::vector<T>& x) {
+T minimum_naive(const std::span<T>& x) {
 	T min = std::numeric_limits<T>::max();
 
 	for (size_t i = 0; i < x.size(); ++i) {
@@ -22,7 +22,7 @@ T minimum_naive(const std::vector<T>& x) {
 
 
 template <typename T, size_t UNROLL_FACTOR>
-T minimum_templated_unrolling(const std::vector<T>& x) {
+T minimum_templated_unrolling(const std::span<T>& x) {
 	std::array<T, UNROLL_FACTOR> acc{std::numeric_limits<T>::max()};
 	size_t i;
 
@@ -51,7 +51,7 @@ T minimum_templated_unrolling(const std::vector<T>& x) {
 #include <experimental/simd>
 
 template <typename T>
-T minimum_experimental_simd(const std::vector<T>& x) {
+T minimum_experimental_simd(const std::span<T>& x) {
 	using simd_t = std::experimental::native_simd<T>;
 	using mask_t = std::experimental::native_simd_mask<T>;
 
@@ -83,7 +83,7 @@ T minimum_experimental_simd(const std::vector<T>& x) {
 
 
 template <typename T>
-T minimum_ispc(const std::vector<T>& x) {
+T minimum_ispc(const std::span<T>& x) {
 	if constexpr (std::is_same_v<T, float>) {
 		return ispc::minimumf(x.data(), x.size());
 	}

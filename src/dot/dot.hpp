@@ -2,13 +2,13 @@
 #define __DOT_HPP__
 
 
+#include <span>
 #include <array>
-#include <vector>
 #include <numeric>
 
 
 template <typename T>
-T dot_naive(const std::vector<T>& x, const std::vector<T>& y) {
+T dot_naive(const std::span<T>& x, const std::span<T>& y) {
 	T acc = 0;
 
 	for (size_t i = 0; i < x.size(); ++i) {
@@ -20,7 +20,7 @@ T dot_naive(const std::vector<T>& x, const std::vector<T>& y) {
 
 
 template <typename T, size_t UNROLL_FACTOR>
-T dot_templated_unrolling(const std::vector<T>& x, const std::vector<T>& y) {
+T dot_templated_unrolling(const std::span<T>& x, const std::span<T>& y) {
 	std::array<T, UNROLL_FACTOR> acc{0};
 	size_t i;
 
@@ -50,7 +50,7 @@ T dot_templated_unrolling(const std::vector<T>& x, const std::vector<T>& y) {
 #include <experimental/simd>
 
 template <typename T>
-T dot_experimental_simd(const std::vector<T>& x, const std::vector<T>& y) {
+T dot_experimental_simd(const std::span<T>& x, const std::span<T>& y) {
 	using simd_t = std::experimental::native_simd<T>;
 	simd_t acc = 0, vx, vy;
 	size_t i;
@@ -87,7 +87,7 @@ T dot_experimental_simd(const std::vector<T>& x, const std::vector<T>& y) {
 
 
 template <typename T>
-T dot_ispc(const std::vector<T>& x, const std::vector<T>& y) {
+T dot_ispc(const std::span<T>& x, const std::span<T>& y) {
 	if constexpr (std::is_same_v<T, float>) {
 		return ispc::dotf(x.data(), y.data(), x.size());
 	}
