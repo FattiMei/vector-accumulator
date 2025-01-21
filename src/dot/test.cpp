@@ -49,7 +49,9 @@ int main() {
 		const auto alternative = impl(x, y);
 		const auto rel = std::abs(reference - alternative) / std::abs(reference);
 
-		assert(rel < 1e-12);
+		if (rel > 1e-12) {
+			return 1;
+		}
 
 		std::cout << name << ' ' << rel << std::endl;
 	}

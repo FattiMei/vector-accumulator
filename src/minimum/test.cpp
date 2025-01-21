@@ -46,7 +46,10 @@ int main() {
 
 	for (const auto& [name, impl] : recipe) {
 		const auto alternative = impl(x);
-		assert(reference == alternative);
+
+		if (reference != alternative) {
+			return 1;
+		}
 
 		std::cout << name << ' ' << alternative << std::endl;
 	}

@@ -42,30 +42,28 @@ if (NOT DEFINED ISPC_EXECUTABLE)
 endif()
 
 
+enable_testing()
+
 
 # experiment enumeration
 set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
-set(DOT_PRODUCT_DIR "${SRC_DIR}/dot")
-set(MIN_PRODUCT_DIR "${SRC_DIR}/minimum")
+file(GLOB EXPERIMENTS LIST_DIRECTORIES true "${SRC_DIR}/*")
 
 
-add_executable(
-	dot_product_test
-	${DOT_PRODUCT_DIR}/test.cpp
-	${DOT_PRODUCT_DIR}/dot.ispc
-)
-if (UNIX)
-	set(arch_flag "-m${ISPC_ARCH_BIT}")
-	target_compile_options(dot_product_test PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
-endif()
+foreach (EXPERIMENT_DIR ${EXPERIMENTS})
+	get_filename_component(EXPERIMENT_NAME ${EXPERIMENT_DIR} NAME)
+	set(TEST_NAME "${EXPERIMENT_NAME}_test")
 
+	add_executable(
+		${TEST_NAME}
+		${EXPERIMENT_DIR}/test.cpp
+		${EXPERIMENT_DIR}/${EXPERIMENT_NAME}.ispc
+	)
+	if (UNIX)
+		set(arch_flag "-m${ISPC_ARCH_BIT}")
+		target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
+		target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:-march=native>)
+	endif()
 
-add_executable(
-	minimum_test
-	${MIN_PRODUCT_DIR}/test.cpp
-	${MIN_PRODUCT_DIR}/minimum.ispc
-)
-if (UNIX)
-	set(arch_flag "-m${ISPC_ARCH_BIT}")
-	target_compile_options(minimum_test PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
-endif()
+	add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+endforeach()
