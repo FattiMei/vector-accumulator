@@ -1,4 +1,3 @@
-#include <span>
 #include <cmath>
 #include <array>
 #include <string>
@@ -25,15 +24,12 @@ std::vector<T> generate_random_sequence(size_t n, std::default_random_engine &ge
 
 int main() {
 	using floating = double;
-	using dot_impl = std::function<floating(const std::span<floating>&, const std::span<floating>&)>;
+	using dot_impl = std::function<floating(const size_t, const floating*, const floating*)>;
 	std::default_random_engine gen(420);
 
 	auto x = generate_random_sequence<floating>(99999, gen);
 	auto y = generate_random_sequence<floating>(99999, gen);
-	const auto reference = dot_naive(
-		std::span(x),
-		std::span(y)
-	);
+	const auto reference = dot_naive(x.size(), x.data(), y.data());
 
 	const auto recipe = {
 		  std::make_pair("manual_unroll(2)", dot_templated_unrolling<floating, 2>)
@@ -50,7 +46,7 @@ int main() {
 	};
 
 	for (const auto& [name, impl] : recipe) {
-		const auto alternative = impl(x, y);
+		const auto alternative = impl(x.size(), x.data(), y.data());
 		const auto rel = std::abs(reference - alternative) / std::abs(reference);
 
 		if (rel > 1e-12) {
