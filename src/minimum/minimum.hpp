@@ -2,7 +2,6 @@
 #define __MINIMUM_HPP__
 
 
-#include <span>
 #include <array>
 #include <limits>
 #include <numeric>
@@ -10,10 +9,10 @@
 
 
 template <typename T>
-T minimum_naive(const std::span<T>& x) {
+T minimum_naive(const size_t n, const T x[]) {
 	T min = std::numeric_limits<T>::max();
 
-	for (size_t i = 0; i < x.size(); ++i) {
+	for (size_t i = 0; i < n; ++i) {
 		min = std::min(min, x[i]);
 	}
 
@@ -22,18 +21,18 @@ T minimum_naive(const std::span<T>& x) {
 
 
 template <typename T, size_t UNROLL_FACTOR>
-T minimum_templated_unrolling(const std::span<T>& x) {
+T minimum_templated_unrolling(const size_t n, const T x[]) {
 	std::array<T, UNROLL_FACTOR> acc{std::numeric_limits<T>::max()};
 	size_t i;
 
-	for (i = 0; i + UNROLL_FACTOR <= x.size(); i += UNROLL_FACTOR) {
+	for (i = 0; i + UNROLL_FACTOR <= n; i += UNROLL_FACTOR) {
 		for (auto j = 0; j < UNROLL_FACTOR; ++j) {
 			acc[j] = std::min(acc[j], x[i+j]);
 		}
 	}
 
 	// loop peeling
-	if (i < x.size()) {
+	if (i < n) {
 		for (auto j = 0; j < UNROLL_FACTOR; ++j) {
 			acc[j] = std::min(acc[j], x[i+j]);
 		}
@@ -51,15 +50,15 @@ T minimum_templated_unrolling(const std::span<T>& x) {
 #include <experimental/simd>
 
 template <typename T>
-T minimum_experimental_simd(const std::span<T>& x) {
+T minimum_experimental_simd(const size_t n, const T x[]) {
 	using simd_t = std::experimental::native_simd<T>;
 	using mask_t = std::experimental::native_simd_mask<T>;
 
 	simd_t acc = std::numeric_limits<T>::max();
 	simd_t vx;
 
-	for (size_t i = 0; i + acc.size() <= x.size(); i += acc.size()) {
-		vx.copy_from(x.data() + i, std::experimental::element_aligned);
+	for (size_t i = 0; i + acc.size() <= n; i += acc.size()) {
+		vx.copy_from(x + i, std::experimental::element_aligned);
 
 		acc = std::experimental::min(acc, vx);
 	}
@@ -83,12 +82,12 @@ T minimum_experimental_simd(const std::span<T>& x) {
 
 
 template <typename T>
-T minimum_ispc(const std::span<T>& x) {
+T minimum_ispc(const size_t n, const T x[]) {
 	if constexpr (std::is_same_v<T, float>) {
-		return ispc::minimumf(x.data(), x.size());
+		return ispc::minimumf(x, n);
 	}
 	else if constexpr (std::is_same_v<T, double>) {
-		return ispc::minimumd(x.data(), x.size());
+		return ispc::minimumd(x, n);
 	}
 }
 

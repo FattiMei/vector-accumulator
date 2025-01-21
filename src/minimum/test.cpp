@@ -25,11 +25,11 @@ std::vector<T> generate_random_sequence(size_t n, std::default_random_engine &ge
 
 int main() {
 	using floating = double;
-	using dot_impl = std::function<floating(const std::span<floating>&)>;
+	using dot_impl = std::function<floating(const size_t, const floating*)>;
 	std::default_random_engine gen(420);
 
 	auto x = generate_random_sequence<floating>(99999, gen);
-	const auto reference = minimum_naive(std::span(x));
+	const auto reference = minimum_naive(x.size(), x.data());
 
 	const auto recipe = {
 		  std::make_pair("manual_unroll(2)", minimum_templated_unrolling<floating, 2>)
@@ -46,7 +46,7 @@ int main() {
 	};
 
 	for (const auto& [name, impl] : recipe) {
-		const auto alternative = impl(x);
+		const auto alternative = impl(x.size(), x.data());
 
 		if (reference != alternative) {
 			return 1;

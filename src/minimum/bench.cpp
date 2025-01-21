@@ -26,7 +26,7 @@ std::vector<double> y(NELEMENTS);
 
 
 // TODO: it's very ugly to template on a function pointer, can we do better?
-template <double (*impl)(const std::span<double>&)>
+template <double (*impl)(const size_t, const double *)>
 static void BM_minimum(benchmark::State &state) {
 	const int total_bytes_processed = state.range(0);
 	const int n = (total_bytes_processed / 2) / sizeof(double);
@@ -34,7 +34,7 @@ static void BM_minimum(benchmark::State &state) {
 	std::vector<double> first(x.begin(), x.begin() + n);
 
 	for (auto _ : state) {
-		auto result = impl(std::span(first));
+		auto result = impl(x.size(), x.data());
 		benchmark::DoNotOptimize(result);
 	}
 }
