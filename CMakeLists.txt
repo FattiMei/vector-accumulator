@@ -9,6 +9,8 @@ endif()
 
 set(CMAKE_CXX_STANDARD 23)
 
+find_package(benchmark REQUIRED)
+
 
 # support for C++ std::experimental
 if (NOT DEFINED COMPILE_SIMD)
@@ -53,6 +55,7 @@ file(GLOB EXPERIMENTS LIST_DIRECTORIES true "${SRC_DIR}/*")
 foreach (EXPERIMENT_DIR ${EXPERIMENTS})
 	get_filename_component(EXPERIMENT_NAME ${EXPERIMENT_DIR} NAME)
 	set(TEST_NAME "${EXPERIMENT_NAME}_test")
+	set(BENCH_NAME "${EXPERIMENT_NAME}_bench")
 
 	add_executable(
 		${TEST_NAME}
@@ -64,6 +67,18 @@ foreach (EXPERIMENT_DIR ${EXPERIMENTS})
 		target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
 		target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:-march=native>)
 	endif()
+
+	add_executable(
+		${BENCH_NAME}
+		${EXPERIMENT_DIR}/bench.cpp
+		${EXPERIMENT_DIR}/${EXPERIMENT_NAME}.ispc
+	)
+	if (UNIX)
+		set(arch_flag "-m${ISPC_ARCH_BIT}")
+		target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
+		target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:-march=native>)
+	endif()
+	target_link_libraries(${BENCH_NAME} PRIVATE benchmark::benchmark)
 
 	add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endforeach()
