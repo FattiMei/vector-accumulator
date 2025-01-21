@@ -45,6 +45,13 @@ BENCHMARK_TEMPLATE(BM_minimum, minimum_templated_unrolling<double, 2 >)->RangeMu
 BENCHMARK_TEMPLATE(BM_minimum, minimum_templated_unrolling<double, 4 >)->RangeMultiplier(2)->Range(1024, BUFSIZE);
 BENCHMARK_TEMPLATE(BM_minimum, minimum_templated_unrolling<double, 8 >)->RangeMultiplier(2)->Range(1024, BUFSIZE);
 BENCHMARK_TEMPLATE(BM_minimum, minimum_templated_unrolling<double, 16>)->RangeMultiplier(2)->Range(1024, BUFSIZE);
+
+#ifdef EXPERIMENTAL_SIMD_SUPPORT
 BENCHMARK_TEMPLATE(BM_minimum, minimum_experimental_simd<double>      )->RangeMultiplier(2)->Range(1024, BUFSIZE);
+#endif
+
+#ifdef ISPC_SUPPORT
+BENCHMARK_TEMPLATE(BM_minimum, minimum_ispc<double>                   )->RangeMultiplier(2)->Range(1024, BUFSIZE);
+#endif
 
 BENCHMARK_MAIN();
