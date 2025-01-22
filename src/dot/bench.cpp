@@ -9,9 +9,11 @@
 
 
 #ifdef USE_FLOAT32
-	using floating = float;
+	#define floating float
+	#define floating_typestr "float"
 #else
-	using floating = double;
+	#define floating double
+	#define floating_typestr "double"
 #endif
 
 
@@ -22,10 +24,14 @@ constexpr size_t NELEMENTS = (BUFSIZE / 2) / sizeof(floating);
 	#include <array>
 	std::array<floating, NELEMENTS> x;
 	std::array<floating, NELEMENTS> y;
+
+	#define memory_type "static memory"
 #else
 	#include <vector>
 	std::vector<floating> x(NELEMENTS);
 	std::vector<floating> y(NELEMENTS);
+
+	#define memory_type "heap memory"
 #endif
 
 
@@ -39,7 +45,6 @@ static void BM_dot(benchmark::State &state) {
 		benchmark::DoNotOptimize(result);
 	}
 }
-
 
 BENCHMARK_TEMPLATE(BM_dot, dot_naive                            )->RangeMultiplier(2)->Range(1024, BUFSIZE);
 BENCHMARK_TEMPLATE(BM_dot, dot_templated_unrolling<floating, 2 >)->RangeMultiplier(2)->Range(1024, BUFSIZE);
@@ -55,4 +60,29 @@ BENCHMARK_TEMPLATE(BM_dot, dot_experimental_simd<floating>      )->RangeMultipli
 BENCHMARK_TEMPLATE(BM_dot, dot_ispc<floating>                   )->RangeMultiplier(2)->Range(1024, BUFSIZE);
 #endif
 
-BENCHMARK_MAIN();
+
+// this main has been copied from the macro expansion of `BENCHMARK_MAIN`
+// needed to complete the report with the floating point type used
+int main(int argc, char** argv) {
+	char arg0_default[] = "benchmark";
+	char* args_default = arg0_default;
+
+	if (!argv) {
+		argc = 1;
+		argv = &args_default;
+	}
+
+	benchmark::Initialize(&argc, argv);
+
+	if (benchmark::ReportUnrecognizedArguments(argc, argv)){
+		return 1;
+	}
+
+	benchmark::AddCustomContext("experiment", "dot product");
+	benchmark::AddCustomContext("floating_type", floating_typestr);
+	benchmark::AddCustomContext("memory_type", memory_type);
+	benchmark::RunSpecifiedBenchmarks();
+	benchmark::Shutdown();
+
+	return 0;
+}

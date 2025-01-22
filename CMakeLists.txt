@@ -15,7 +15,17 @@ find_package(benchmark REQUIRED)
 find_package(Python3 REQUIRED)
 
 
-add_compile_definitions()
+# options for the benchmark
+option(USE_FLOAT32 "All floating point numbers are fp32" OFF)
+option(USE_STATIC_MEMORY "Profile the reductions on static arrays" OFF)
+
+if (USE_FLOAT32)
+	add_compile_definitions(USE_FLOAT32)
+endif()
+
+if (USE_STATIC_MEMORY)
+	add_compile_definitions(USE_STATIC_MEMORY)
+endif()
 
 
 # support for C++ std::experimental
