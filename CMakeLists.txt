@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(vector-accumulator)
+project(vector-accumulator CXX ASM)
 
 
 # language configuration
@@ -58,7 +58,6 @@ endif()
 
 
 if (DEFINED ISPC_EXECUTABLE)
-	include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ispc.cmake)
 	add_compile_definitions(ISPC_SUPPORT)
 endif()
 
@@ -72,30 +71,24 @@ file(GLOB EXPERIMENTS LIST_DIRECTORIES TRUE "${SRC_DIR}/*")
 
 
 foreach (EXPERIMENT_DIR ${EXPERIMENTS})
+	# this will be convoluted because I need some sophisticated features:
+	#   1. Since both the test target and the experiment target include the same .hpp file with templated implementations, the recompilation of the file is a waste of resources
+	#   2. I want to look at the generated assembly like in compiler explorer, don't want to recompile the file same file for an object output and an assembly output, so I'll produce only the assembly
 	get_filename_component(EXPERIMENT_NAME ${EXPERIMENT_DIR} NAME)
-	set(TEST_NAME "${EXPERIMENT_NAME}_test")
-	set(BENCH_NAME "${EXPERIMENT_NAME}_bench")
+	set(TEST_EXE_NAME    "${EXPERIMENT_NAME}_test")
+	set(BENCH_EXE_NAME   "${EXPERIMENT_NAME}_bench")
 	set(JSON_REPORT_NAME "${EXPERIMENT_NAME}_report.json")
 
-	add_executable(
-		${TEST_NAME}
-		${EXPERIMENT_DIR}/test.cpp
-		${EXPERIMENT_DIR}/${EXPERIMENT_NAME}.ispc
-	)
-	target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${ARCH_FLAG} ${AGGRESSIVE_OPTIMIZATIONS}>)
+	add_executable(${TEST_EXE_NAME} ${EXPERIMENT_DIR}/test.cpp)
 
-	add_executable(
-		${BENCH_NAME}
-		${EXPERIMENT_DIR}/bench.cpp
-		${EXPERIMENT_DIR}/${EXPERIMENT_NAME}.ispc
-	)
-	target_compile_options(${BENCH_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${ARCH_FLAG} ${AGGRESSIVE_OPTIMIZATIONS}>)
-	target_link_libraries(${BENCH_NAME} PRIVATE benchmark::benchmark)
+	add_executable(${BENCH_EXE_NAME} ${EXPERIMENT_DIR}/bench.cpp)
+	target_compile_options(${BENCH_EXE_NAME} PRIVATE ${AGGRESSIVE_OPTIMIZATIONS})
+	target_link_libraries(${BENCH_EXE_NAME} PRIVATE benchmark::benchmark)
 
 	add_custom_command(
 		OUTPUT ${JSON_REPORT_NAME}
-		DEPENDS ${BENCH_NAME}
-		COMMAND ${BENCH_NAME} --benchmark_out=${JSON_REPORT_NAME} --benchmark_out_format=json
+		DEPENDS ${BENCH_EXE_NAME}
+		COMMAND ${BENCH_EXE_NAME} --benchmark_out=${JSON_REPORT_NAME} --benchmark_out_format=json
 	)
 
 	add_custom_target(
@@ -104,5 +97,25 @@ foreach (EXPERIMENT_DIR ${EXPERIMENTS})
 		COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/plot.py ${JSON_REPORT_NAME}
 	)
 
-	add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+	# assembly generation of the ISPC implementations
+	if (DEFINED ISPC_EXECUTABLE)
+		set(ISPC_SRC "${EXPERIMENT_DIR}/${EXPERIMENT_NAME}.ispc")
+		set(ISPC_ASM_NAME "${EXPERIMENT_NAME}_ispc.s")
+		set(ISPC_HEADER_NAME "${CMAKE_CURRENT_BINARY_DIR}/${EXPERIMENT_NAME}_ispc.h")
+
+		# assuming the ispc files are independent and don't require any definition
+		add_custom_command(
+			OUTPUT  ${ISPC_ASM_NAME}
+			DEPENDS ${ISPC_SRC}
+			COMMAND ${ISPC_EXECUTABLE} ${ISPC_SRC} -O3 --emit-asm -h ${ISPC_HEADER_NAME} -o ${ISPC_ASM_NAME}
+		)
+
+		target_sources(${TEST_EXE_NAME} PRIVATE ${ISPC_ASM_NAME})
+		target_include_directories(${TEST_EXE_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+		target_sources(${BENCH_EXE_NAME} PRIVATE ${ISPC_ASM_NAME})
+		target_include_directories(${BENCH_EXE_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+	endif()
+
+	add_test(NAME ${TEST_EXE_NAME} COMMAND ${TEST_EXE_NAME})
 endforeach()
