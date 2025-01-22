@@ -7,11 +7,15 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(AGGRESSIVE_OPTIMIZATIONS "-march=native" "-ftree-vectorize")
 
 find_package(benchmark REQUIRED)
 find_package(Python3 REQUIRED)
+
+
+add_compile_definitions()
 
 
 # support for C++ std::experimental
@@ -31,6 +35,7 @@ if (COMPILE_SIMD)
 endif()
 
 
+# support for ispc compiler
 if (NOT DEFINED ISPC_EXECUTABLE)
 	find_program(ISPC_EXECUTABLE ispc)
 
@@ -53,7 +58,7 @@ enable_testing()
 
 # experiment enumeration
 set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
-file(GLOB EXPERIMENTS LIST_DIRECTORIES true "${SRC_DIR}/*")
+file(GLOB EXPERIMENTS LIST_DIRECTORIES TRUE "${SRC_DIR}/*")
 
 
 foreach (EXPERIMENT_DIR ${EXPERIMENTS})
@@ -62,25 +67,19 @@ foreach (EXPERIMENT_DIR ${EXPERIMENTS})
 	set(BENCH_NAME "${EXPERIMENT_NAME}_bench")
 	set(JSON_REPORT_NAME "${EXPERIMENT_NAME}_report.json")
 
-	# TODO: the one thing I don't particularly like is the repetition of the compilation commands for the test and the benchmark executables
-	# should become functions
 	add_executable(
 		${TEST_NAME}
 		${EXPERIMENT_DIR}/test.cpp
 		${EXPERIMENT_DIR}/${EXPERIMENT_NAME}.ispc
 	)
-	set(arch_flag "-m${ISPC_ARCH_BIT}")
-	target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
-	target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${AGGRESSIVE_OPTIMIZATIONS}>)
+	target_compile_options(${TEST_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${ARCH_FLAG} ${AGGRESSIVE_OPTIMIZATIONS}>)
 
 	add_executable(
 		${BENCH_NAME}
 		${EXPERIMENT_DIR}/bench.cpp
 		${EXPERIMENT_DIR}/${EXPERIMENT_NAME}.ispc
 	)
-	set(arch_flag "-m${ISPC_ARCH_BIT}")
-	target_compile_options(${BENCH_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${arch_flag}>)
-	target_compile_options(${BENCH_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${AGGRESSIVE_OPTIMIZATIONS}>)
+	target_compile_options(${BENCH_NAME} PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:${ARCH_FLAG} ${AGGRESSIVE_OPTIMIZATIONS}>)
 	target_link_libraries(${BENCH_NAME} PRIVATE benchmark::benchmark)
 
 	add_custom_command(

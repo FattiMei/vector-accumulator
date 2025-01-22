@@ -42,6 +42,7 @@ else()
 
 	set(ISPC_ARCH "${ispc_arch}" CACHE STRING "ISPC CPU ARCH")
 	set(ISPC_ARCH_BIT "${arch_bit}" CACHE STRING "ISPC CPU BIT")
+	set(ARCH_FLAG "-m${ISPC_ARCH_BIT}" CACHE STRING "ISPC ARCH FLAG")
 endif()
 
 
