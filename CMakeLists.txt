@@ -70,10 +70,10 @@ set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
 file(GLOB EXPERIMENTS LIST_DIRECTORIES TRUE "${SRC_DIR}/*")
 
 
+# there are some inefficiencies in the build process, mainly regarding template instantiation as
+# test target and benchmark target possibly instantiate the same templated functions (although they use different optimization flags)
+# this solution has the upside of being a little easier to understand (still the problem of minimizing the recompilation of templates is interesting)
 foreach (EXPERIMENT_DIR ${EXPERIMENTS})
-	# this will be convoluted because I need some sophisticated features:
-	#   1. Since both the test target and the experiment target include the same .hpp file with templated implementations, the recompilation of the file is a waste of resources
-	#   2. I want to look at the generated assembly like in compiler explorer, don't want to recompile the file same file for an object output and an assembly output, so I'll produce only the assembly
 	get_filename_component(EXPERIMENT_NAME ${EXPERIMENT_DIR} NAME)
 	set(TEST_EXE_NAME    "${EXPERIMENT_NAME}_test")
 	set(BENCH_EXE_NAME   "${EXPERIMENT_NAME}_bench")
@@ -97,13 +97,11 @@ foreach (EXPERIMENT_DIR ${EXPERIMENTS})
 		COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/plot.py ${JSON_REPORT_NAME}
 	)
 
-	# assembly generation of the ISPC implementations
 	if (DEFINED ISPC_EXECUTABLE)
 		set(ISPC_SRC "${EXPERIMENT_DIR}/${EXPERIMENT_NAME}.ispc")
 		set(ISPC_ASM_NAME "${EXPERIMENT_NAME}_ispc.s")
 		set(ISPC_HEADER_NAME "${CMAKE_CURRENT_BINARY_DIR}/${EXPERIMENT_NAME}_ispc.h")
 
-		# assuming the ispc files are independent and don't require any definition
 		add_custom_command(
 			OUTPUT  ${ISPC_ASM_NAME}
 			DEPENDS ${ISPC_SRC}
