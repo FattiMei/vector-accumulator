@@ -22,6 +22,8 @@ def process_benchmark(benchmark):
 
     nbytes = int(n)
     time = benchmark['real_time'] * get_time_unit(benchmark['time_unit'])
+
+    # throughput is in gigabytes per seconds
     throughput = (nbytes / 2**30) / time
 
     return name, nbytes, throughput
@@ -35,29 +37,25 @@ def process_cache_data(report):
     ]
 
 
-def parse(json_path):
-    result = {}
+def collect_results(report):
+    results = {}
 
-    with open(json_path, 'r') as file:
-        report = json.load(file)
+    for run in report['benchmarks']:
+        name, nbytes, throughput = process_benchmark(run)
 
-    for bench in report['benchmarks']:
-        name, nbytes, throughput = process_benchmark(bench)
+        if name in results:
+            results[name]['bytes'].append(nbytes)
+            results[name]['throughput'].append(throughput)
+        else:
+            results[name] = {}
+            results[name]['bytes'] = [nbytes]
+            results[name]['throughput'] = [throughput]
 
-        try:
-            result[name]['bytes'].append(nbytes)
-            result[name]['throughput'].append(throughput)
+    for name, data in results.items():
+        results[name]['bytes'] = np.array(data['bytes'])
+        results[name]['throughput'] = np.array(data['throughput'])
 
-        except KeyError:
-            result[name] = {}
-            result[name]['bytes'] = [nbytes]
-            result[name]['throughput'] = [throughput]
-
-    for name, data in result.items():
-        result[name]['bytes'] = np.array(data['bytes'])
-        result[name]['throughput'] = np.array(data['throughput'])
-
-    return result, process_cache_data(report)
+    return results
 
 
 if __name__ == '__main__':
@@ -65,49 +63,47 @@ if __name__ == '__main__':
         print("Usage: python plot.py <json report>")
         sys.exit(1)
 
-    results, cache = parse(sys.argv[1])
+    with open(sys.argv[1], 'r') as file:
+        report = json.load(file)
 
+    cache         = process_cache_data(report)
+    experiment    = report['context']['experiment']
+    floating_type = report['context']['floating_type']
+    memory_type   = report['context']['memory_type']
+    results       = collect_results(report)
 
     # ---------------------------- scalability plot ---------------------------
-    plt.title("dot product scalability")
+    plt.figure(1)
+    plt.title(f"{experiment} throughput")
     plt.xlabel("size [bytes]")
-    plt.ylabel("throughput [Gb/s]")
+    plt.ylabel("throughput [GB/s]")
 
     for name, data in results.items():
-        plt.semilogx(data['bytes'], data['throughput'], label=name)
+        # this is not a general transformation and is here only because I can't export the floating_type in the benchmark name
+        corrected_name = name.replace("floating", floating_type)
+        plt.semilogx(data['bytes'], data['throughput'], label=corrected_name, base=2)
 
     for c in cache:
         plt.axvline(c, color='black', linewidth=1)
 
     plt.legend(framealpha=1)
 
-    try:
-        plt.show()
-
-    except:
-        print("Can't plot on screen, saving to file")
-        plt.savefig('dot_scalability.svg', format='svg')
-        plt.savefig('dot_scalability.png', format='png')
-
-
     # -------------------------------speedup plot ------------------------------
-    reference = results['dot_naive']['throughput']
+    reference_experiment_name = [name for name in results.keys() if name.find('naive') != -1][0]
+    reference = results[reference_experiment_name]['throughput']
 
-    plt.title("dot product speedup")
+    plt.figure(2)
+    plt.title(f"{experiment} speedup")
     plt.xlabel("size [bytes]")
     plt.ylabel("speedup")
 
     for name, data in results.items():
-        plt.semilogx(data['bytes'], data['throughput'] / reference, label=name)
+        corrected_name = name.replace("floating", floating_type)
+        plt.semilogx(data['bytes'], data['throughput'] / reference, label=corrected_name, base=2)
 
     for c in cache:
         plt.axvline(c, color='black', linewidth=1)
 
     plt.legend(framealpha=1)
 
-    try:
-        plt.show()
-
-    except:
-        plt.savefig('dot_speedup.svg', format='svg')
-        plt.savefig('dot_speedup.png', format='png')
+    plt.show()

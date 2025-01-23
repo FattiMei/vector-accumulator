@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	benchmark::AddCustomContext("experiment", "dot product");
+	benchmark::AddCustomContext("experiment", "minimum");
 	benchmark::AddCustomContext("floating_type", floating_typestr);
 	benchmark::AddCustomContext("memory_type", memory_type);
 	benchmark::RunSpecifiedBenchmarks();
