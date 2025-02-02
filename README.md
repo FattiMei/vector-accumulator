@@ -94,3 +94,9 @@ This work is an example of a microbenchmark. We are profiling an extremely speci
 Throughput is dependent on memory locality of the data to be processed. The speedup of SIMD implementations around 4-8x is attenuated when the arrays don't fit in caches anymore. If there were any differences between the SIMD implementations, those differences are irrelevant in a memory bound regime (see the rightmost part of the plot). In conclusion:
   * I see why GPU vendors are pushing for high bandwidth memories (HBM)
   * In the memory bound region of computing the CPU is waiting for data to be fetched, in that time the resources could be allocated on other useful tasks
+
+# What are really the relevant aspects of performance?
+When compiling this program with the `-Ofast` flag, every implementation is as fast as it could be. All it took was to relax a little the constraints of floating point operations, and the compiler figured out the optimal vectorization strategy. All the sophisticated techniques were ultimately pointless, what to do?
+![plot](./img/ofast_double_heap_memory_throughput.png)
+
+I'd suggest to *work on higher level stuff* as numerical codes are not a single algorithm, rather a complex sequence of data processing with intricate data dependencies.
