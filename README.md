@@ -49,7 +49,7 @@ A comparison of the program runtimes and generated code will be included in the 
 ## Metaprogramming assisted loop unrolling
 If the iterations of a loop don't depend from each other, there is a chance the compiler may unroll the loop. This chance is increased by providing proper optimization flags to the compiler (i.e `-O3 -ffast-math` etc..) and by having for loops with compile time known bounds.
 
-```(c)
+```c
 for (int i = 0; i < 4; ++i) {
     z[i] = x[i] + y[i];
 }
@@ -63,7 +63,7 @@ z[3] = x[3] + y[3];
 
 C++ metaprogramming allows the programmer to select a compile time the desired unroll factor and produce multiple implementations to compare.
 
-```(c++)
+```c++
 template <typename T, size_t UNROLL_FACTOR>
 T dot_simd(const std::vector<T>& x, const std::vector<T>& y) {
     assert(x.size() % UNROLL_FACTOR == 0);
